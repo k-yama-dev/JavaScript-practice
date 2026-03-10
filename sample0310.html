@@ -1,1 +1,279 @@
+<!DOCTYPE html>
+<html lang="ja">
 
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>sample0310</title>
+    <style>
+        /*p170　スライドショー作成CSS*/
+        .fadeIn {
+            animation-name: fadeInAnime;
+            animation-duration: 1s;
+            animation-fill-mode: forwards;
+        }
+
+        @keyframes fadeInAnime {
+            0% {
+                opacity: 0;
+            }
+
+            100% {
+                opacity: 1;
+            }
+        }
+
+        .fadeOut {
+            animation-name: fadeOutAnime;
+            animation-duration: 1s;
+            animation-fill-mode: forwards;
+        }
+
+        @keyframes fadeOutAnime {
+            from {
+                opacity: 1;
+            }
+
+            to {
+                opacity: 0;
+            }
+        }
+
+        /* メモ帳 */
+        textarea {
+            width: 300px;
+            height: 200px;
+        }
+
+        /* 表のデザイン */
+        #calendar table {
+            border-collapse: collapse;
+            width: 600px;
+        }
+
+        #calendar table td,
+        #calendar table th {
+            border: solid 1px #333333;
+            text-align: center;
+            padding: 10px;
+        }
+
+        #calendar table th {
+            background-color: #cccccc;
+        }
+
+        .sun {
+            color: #ff0000;
+        }
+
+        .sat {
+            color: #0000ff;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>PHOTO ALBUM</h1>
+    <div id="photo_frame">
+        <img src="image/big_pic01.jpg" id="photo">
+    </div>
+    <p>この画像は５秒間隔で自動的に切り替わります。</p>
+    <p><button id="btn">スライドショーを停止</button></p>
+
+    <!-- 郵便番号検索 JSON-->
+    <h1>郵便番号検索</h1>
+    <p>郵便番号：<input type="text" id="zip_code">
+        <button id="btn2">クリック</button>
+    </p>
+    <ul>
+        <li>Pref: <span id="pref"></span></li>
+        <li>City:<span id="city"></span></li>
+        <li>Town:<span id="town"></span></li>
+        <li>Address:<span id="address"></span></li>
+        <li>FullAddress:<span id="full_address"></span></li>
+    </ul>
+    <!-- メモ帳 ローカルストレージ-->
+    <h1>メモ帳</h1>
+    <p><textarea id="memo"></textarea></p>
+    <p>
+        <button id="save">保存する</button>
+        <button id="delete">削除する</button>
+    </p>
+
+    <h1>カレンダー</h1>
+    <p>
+        <button id="prev">前月</button>
+        <button id="next">翌月</button>
+    </p>
+    <div id="calendar"></div>
+
+    <script>
+        //カレンダー
+        let date = new Date();
+        let year = date.getFullYear();
+        let month = date.getMonth() + 1;
+        createCalendar();
+        //翌月に切り替え
+        document.getElementById('next')
+            .addEventListener('click', function () {
+                month++;
+                if (month > 12) {
+                    year++;
+                    month = 1;
+                }
+                createCalendar();
+            });
+        //前月に切り替え
+        document.getElementById('prev')
+            .addEventListener('click', function () {
+                month--;
+                if (month < 1) {
+                    year--;
+                    month = 12;
+                }
+                createCalendar();
+            })
+
+        function createCalendar() {
+            //当月1日の日付を取得
+            let firstDate = new Date(year, month - 1, 1);
+            // 翌月の0日を指定して当月の末日を取得
+            let lastDate = new Date(year, month, 0);
+            //年と月を表示
+            let title = year + '年' + month + '月';
+            let captionHtml = '<caption>' + title + '</caption>';
+            //曜日の行を作成
+            let week = ['日', '月', '火', '水', '木', '金', '土'];
+            let weekHtml = '<tr>';
+            for (let i = 0; i < week.length; i++) {
+                if (i == 0) {
+                    weekHtml += '<th class="sun">' + week[i] + '</th>';
+                }
+                else if (i == 6) {
+                    weekHtml += '<th class="sat">' + week[i] + '</th>';
+                }
+                else {
+                    weekHtml += '<th>' + week[i] + '</th>';
+                }
+            }
+            weekHtml += '</tr>';
+            // 日付部分の作成
+            let dateHtml = '<tr>';
+            //1日の曜日
+            let startWeek = firstDate.getDay();
+            //1日までのセルを空白で埋める
+            for (let i = 0; i < startWeek; i++) {
+                dateHtml += '<td>&nbsp;</td>';
+            }
+            //1日から月末日までループ
+            for (let i = 1; i <= lastDate.getDate(); i++) {
+                //各日のオブジェクトを作成
+                let date = new Date(year, month - 1, i);
+                if (date.getDay() == 0) {
+                    //日曜日だったら
+                    dateHtml += '<td class="sun">' + date.getDate() + '</td>';
+                }
+                else if (date.getDay() == 6) {
+                    //土曜日だったら
+                    dateHtml += '<td class="sat">' + date.getDate() + '</td>';
+                    dateHtml += '</tr><tr>';
+                }
+                else {
+                    dateHtml += '<td>' + date.getDate() + '</td>';
+                }
+            }
+            //月末日が土曜日でなかったら空白セルを追加
+            if (lastDate.getDay() != 6) {
+                //月末日の翌日の曜日から土曜日まで空白セルを追加
+                for (let i = lastDate.getDay() + 1; i <= 6; i++) {
+                    dateHtml += '<td>&nbsp;</td>';
+                }
+                dateHtml += '</tr>';
+            }
+
+            let calendar = document.getElementById('calendar');
+            calendar.innerHTML = '<table>' + captionHtml + weekHtml + dateHtml + '</table>';
+        }
+
+
+        //メモ帳 ローカルストレージ
+        let memo = document.getElementById('memo');
+        let saveB = document.getElementById('save');
+        let deleB = document.getElementById('delete');
+        saveB.addEventListener('click', function () {
+            //ローカルストレージに保存
+            localStorage.setItem('memoText', memo.value);
+        });
+        //ローカルストレージのデータを取得
+        let memoC = localStorage.getItem('memoText')
+        if (memoC != '') {
+            memo.value = memoC;
+        }
+        deleB.addEventListener('click', function () {
+            let result = confirm('本当に削除するんかい？');
+            if (result) {
+                //ローカルストレージから削除
+                localStorage.removeItem('memoText');
+                memo.value = '';
+            }
+            else {
+                return;
+            }
+
+        });
+
+        //郵便番号検索 JSON
+        document.getElementById('btn2')
+            .addEventListener('click', function () {
+                let zipCode = document.getElementById('zip_code').value;
+                let url = 'https://api.zipaddress.net/?zipcode=' + zipCode;
+                //fetch関数:外部とデータ通信を行う関数
+                //thenメソッド：非同期通信が成功した場合に実行される
+                //処理を順番にメソッドチェーンで追記できる
+                fetch(url).then(function (data) {
+                    //JSONのデータを読み込むように設定
+                    //このjsonはメソッド（データのjson）
+                    return data.json();
+                }).then(function (json) {
+                    //↑のjsonは変数名　
+                    console.log(json);
+                    document.getElementById('pref').textContent = json.data.pref;
+                    document.getElementById('city').textContent = json.data.city;
+                    document.getElementById('town').textContent = json.data.town;
+                    document.getElementById('address').textContent = json.data.address;
+                    document.getElementById('full_address').textContent = json.data.fullAddress;
+                })
+            })
+
+        //p170-29.3 スライドショーの作成
+        let n = 1;
+        let slideShow = setInterval(changeImg, 666);
+        function changeImg() {
+            n++;
+            //   三項条件式
+            // ↓ 条件式 ? 真の場合：偽の場合；
+            n > 7 ? n = 1 : null;
+            let newFile = 'image/big_pic0' + n + '.jpg';
+            let photo = document.getElementById('photo');
+            //フェードアウト
+            //CSSクラスをつける
+            photo.classList.add('fadeOut');
+            //CSSクラスの削除
+            photo.classList.remove('fadeIn');
+            setTimeout(function () {
+                photo.classList.remove('fadeOut');
+                //画像の変更
+                photo.setAttribute('src', newFile);
+                //フェードイン
+                photo.classList.add('fadeIn');
+            }, 1000);
+        }
+        document.getElementById('btn')
+            .addEventListener('click', function () {
+                clearInterval(slideShow);
+            });
+
+    </script>
+</body>
+
+</html>
